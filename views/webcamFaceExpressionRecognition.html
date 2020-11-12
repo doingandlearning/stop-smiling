@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="face-api.js"></script>
+    <script src="js/commons.js"></script>
+    <script src="js/faceDetectionControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.3.5/dist/alpine.min.js"></script>
+    <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+    <style>
+      .timer {
+        display: flex;
+      }
+      .timer h1 + h1:before {
+        content: ":";
+      }
+
+      #vids-container {
+        display: grid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="">
+
+      <div class="progress" id="loader">
+        <div class="indeterminate"></div>
+      </div>
+      <div class="timer align-center justify-center text-center text-4xl font-bold py-6 mx-auto w-full" x-data="timer(30)" x-init="init();">
+        <h1 x-text="time().minutes"></h1>
+        <h1 x-text="time().seconds"></h1>
+      </div>
+      <div class="flex">
+        <div class="w-3/4" style="">
+          <video src="/videos/programmer.mp4" type="video/mp4" class="w-full" autoplay muted></div>
+          <div style="position:relative" class="margin">
+            <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted playsinline id="youtubeVid"></video>
+            <canvas id="overlay"/>
+          </div>
+        </div>
+      </body>
+
+      <script>
+        let forwardTimes = []
+        let withBoxes = true
+        const state = document.location.search
+          ? document
+            .location
+            .search
+            .split("state=")[1]
+            .split("&")[0]
+          : ""
+
+        function onChangeHideBoundingBoxes(e) {
+          withBoxes = !$(e.target).prop('checked')
+        }
+
+        function initVideo() {
+          const video = document.getElementById("youtubeVid")
+          const funnyVid = funnyVids[Math.floor(Math.random() * funnyVids.length)]
+          video.src = `https://www.youtube.com/embed/${funnyVid}`
+
+        }
+
+        function updateTimeStats(timeInMs) {
+          forwardTimes = [timeInMs]
+            .concat(forwardTimes)
+            .slice(0, 30)
+          const avgTimeInMs = forwardTimes.reduce((total, t) => total + t) / forwardTimes
+            .length
+            $('#time')
+            .val(`${Math.round(avgTimeInMs)} ms`)
+          $('#fps').val(`${faceapi.utils.round(1000 / avgTimeInMs)}`)
+        }
+
+        function triggerRedirect(value) {
+          document.location.href = `https://dev-spinup.eu.auth0.com/continue?state=${state}&success=${value}`
+        }
+
+        async function onPlay() {
+
+          const videoEl = $('#inputVideo').get(0)
+
+          if (videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded()) 
+            return setTimeout(() => onPlay())
+
+          const options = getFaceDetectorOptions()
+
+          const ts = Date.now()
+
+          const result = await faceapi
+            .detectSingleFace(videoEl, options)
+            .withFaceExpressions()
+
+          if (
+            result
+            ?.expressions.happy > 0.8) {
+            // trigger the callback
+            triggerRedirect(false)
+          }
+
+          setTimeout(() => onPlay())
+        }
+
+        async function run() {
+          // load face detection and face expression recognition models
+          await changeFaceDetector(TINY_FACE_DETECTOR)
+          await faceapi.loadFaceExpressionModel('/')
+          changeInputSize(224)
+
+          // try to access users webcam and stream the images
+          // to the video element
+          const stream = await navigator
+            .mediaDevices
+            .getUserMedia({video: {}})
+          const videoEl = $('#inputVideo').get(0)
+          videoEl.srcObject = stream
+        }
+
+        function updateResults() {}
+
+        $(document).ready(function () {
+          renderNavBar('#navbar', 'webcam_face_expression_recognition')
+          initFaceDetectionControls()
+          run()
+        })
+        function timer(expiry) {
+          return {
+            expiry: expiry,
+            remaining: expiry,
+            init() {
+              this.setRemaining()
+              setInterval(() => {
+                this.setRemaining();
+              }, 1000);
+            },
+            setRemaining() {
+              const diff = this.remaining - 1;
+              this.remaining = diff;
+              if (diff <= 0) {
+                triggerRedirect(true)
+              }
+            },
+
+            time() {
+              return {
+                minutes: ("0" + parseInt(0)).slice(-2),
+                seconds: ("0" + parseInt(this.remaining)).slice(-2)
+              }
+            }
+          }
+        }
+      </script>
+    </body>
+  </html>
