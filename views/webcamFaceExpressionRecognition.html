@@ -79,7 +79,7 @@
         function triggerRedirect(value) {
           window
             .location
-            .replace(`https://dolearning-egghead.eu.auth0.com/continue?state=${state}&notsmiling=${value}`)
+            .replace(`/callback?state=${state}&notsmiling=${value}`)
         }
 
         async function onPlay() {

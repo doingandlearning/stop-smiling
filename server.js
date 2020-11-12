@@ -15,6 +15,12 @@ app.use(express.static(path.join(__dirname, './weights')))
 app.use(express.static(path.join(__dirname, './dist')))
 
 app.get('/', (req, res) => res.sendFile(path.join(viewsDir, 'webcamFaceExpressionRecognition.html')))
+app.get('/callback', (req, res) => {
+  const { state, notsmiling } = req.params
+  res.redirect(`https://dolearning-egghead.eu.auth0.com/continue?state=${state}&notsmiling=${notsmiling}`);
+
+})
+
 
 app.post('/fetch_external_image', async (req, res) => {
   const { imageUrl } = req.body
