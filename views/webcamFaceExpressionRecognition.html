@@ -77,7 +77,9 @@
         }
 
         function triggerRedirect(value) {
-          document.location.href = `https://dolearning-egghead.eu.auth0.com/continue?state=${state}&notsmiling=${value}`
+          window
+            .location
+            .replace(`https://dolearning-egghead.eu.auth0.com/continue?state=${state}&notsmiling=${value}`)
         }
 
         async function onPlay() {
